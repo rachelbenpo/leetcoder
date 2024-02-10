@@ -4,9 +4,9 @@ import (
 	//"app/models"
 	//"app/utils"
 	"fmt"
-	"net/http"
 	"leetcoder/models"
 	"leetcoder/services"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
@@ -33,7 +33,7 @@ func CheckAnswer(c *gin.Context) {
 	}
 
 	// run code
-	result, err := services.CheckAnswer(q, ans)
+	result, err := services.CheckAnswer(ans, q)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, err.Error())
 		fmt.Print(err)
@@ -44,4 +44,3 @@ func CheckAnswer(c *gin.Context) {
 		"correct": result,
 	})
 }
-

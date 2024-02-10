@@ -17,7 +17,7 @@ func main() {
 	router.POST("/questions", handlers.CreateQuestion)
 	router.PUT("/questions/:id", handlers.UpdateQuestion)
 	router.DELETE("/questions/:id", handlers.DeleteQuestion)
-	router.POST("/questions/{id}/check-answer", handlers.CheckAnswer)
+	router.POST("/questions/check-answer/:id", handlers.CheckAnswer)
 
 	router.Run(":8080")
 
