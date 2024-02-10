@@ -1,42 +1,42 @@
-package main
+package services
 
 import (
 	"database/sql"
 	"fmt"
-
-	"github.com/gin-gonic/gin"
+	"leetcoder/config"
+	"leetcoder/models"
 )
 
 // services - logic
 
-func getAllQuestions2() ([]Question, error) {
+func GetAllQuestions() ([]models.Question, error) {
 
 	// connect to DB
-	db, err := sql.Open("mysql", DBConnectionString)
+	db, err := sql.Open("mysql", config.DBConnectionString)
 	if err != nil {
-		return []Question{}, err
+		return []models.Question{}, err
 	}
 	defer db.Close()
 
 	// exec SQL
 	rows, err := db.Query("SELECT q.*, t.id, t.input, t.output FROM questions q LEFT JOIN test_cases t ON q.id = t.question_id")
 	if err != nil {
-		return []Question{}, err
+		return []models.Question{}, err
 	}
 	defer rows.Close()
 
 	// get the data
-	var questionsMap = make(map[int]Question)
+	var questionsMap = make(map[int]models.Question)
 
 	for rows.Next() {
-		var question Question
-		question.TestCases = []TestCase{}
+		var question models.Question
+		question.TestCases = []models.TestCase{}
 		var testCaseID sql.NullInt64
 		var input, output sql.NullString
 
 		err := rows.Scan(&question.ID, &question.Name, &question.Instructions, &question.Answer, &testCaseID, &input, &output)
 		if err != nil {
-			return []Question{}, err
+			return []models.Question{}, err
 		}
 
 		q, ok := questionsMap[question.ID]
@@ -48,7 +48,7 @@ func getAllQuestions2() ([]Question, error) {
 
 		// Append test case
 		if testCaseID.Valid {
-			q.TestCases = append(q.TestCases, TestCase{
+			q.TestCases = append(q.TestCases, models.TestCase{
 				ID:     int(testCaseID.Int64),
 				Input:  input.String,
 				Output: output.String,
@@ -59,7 +59,7 @@ func getAllQuestions2() ([]Question, error) {
 	}
 
 	// Convert map to question array
-	var questions []Question
+	var questions []models.Question
 	for _, question := range questionsMap {
 		questions = append(questions, question)
 	}
@@ -67,25 +67,25 @@ func getAllQuestions2() ([]Question, error) {
 	return questions, nil
 }
 
-func getQuestionById2(id string) (Question, error) {
+func GetQuestionById(id string) (models.Question, error) {
 
 	// connect to DB
-	db, err := sql.Open("mysql", DBConnectionString)
+	db, err := sql.Open("mysql", config.DBConnectionString)
 	if err != nil {
-		return Question{}, err
+		return models.Question{}, err
 	}
 	defer db.Close()
 
 	// exec SQL
 	rows, err := db.Query("SELECT q.*, t.id, t.input, t.output FROM questions q LEFT JOIN test_cases t ON q.id = t.question_id WHERE q.id = ?", id)
 	if err != nil {
-		return Question{}, err
+		return models.Question{}, err
 	}
 	defer rows.Close()
 
 	// get the data
-	var question Question
-	question.TestCases = []TestCase{}
+	var question models.Question
+	question.TestCases = []models.TestCase{}
 
 	for rows.Next() {
 		var testCaseID sql.NullInt64
@@ -93,12 +93,12 @@ func getQuestionById2(id string) (Question, error) {
 
 		err := rows.Scan(&question.ID, &question.Name, &question.Instructions, &question.Answer, &testCaseID, &input, &output)
 		if err != nil {
-			return Question{}, err
+			return models.Question{}, err
 		}
 
 		// Append test case if valid
 		if testCaseID.Valid {
-			question.TestCases = append(question.TestCases, TestCase{
+			question.TestCases = append(question.TestCases, models.TestCase{
 				ID:     int(testCaseID.Int64),
 				Input:  input.String,
 				Output: output.String,
@@ -108,16 +108,16 @@ func getQuestionById2(id string) (Question, error) {
 
 	// if no question is found
 	if question.ID == 0 {
-		return Question{}, fmt.Errorf("question not found")
+		return models.Question{}, fmt.Errorf("question not found")
 	}
 
 	return question, nil
 }
 
-func createQuestion2(question Question) (int, error) {
+func CreateQuestion(question models.Question) (int, error) {
 
 	// connect to DB
-	db, err := sql.Open("mysql", DBConnectionString)
+	db, err := sql.Open("mysql", config.DBConnectionString)
 	if err != nil {
 		return 0, err
 	}
@@ -149,17 +149,17 @@ func createQuestion2(question Question) (int, error) {
 	return int(id), nil
 }
 
-func updateQuestion2(id string, updatedQuestion Question) error {
+func UpdateQuestion(id string, updatedQuestion models.Question) error {
 
 	// connect to DB
-	db, err := sql.Open("mysql", DBConnectionString)
+	db, err := sql.Open("mysql", config.DBConnectionString)
 	if err != nil {
 		return err
 	}
 
 	// check if question exists
 	row := db.QueryRow("SELECT * FROM questions WHERE id = ?", id)
-	var question Question
+	var question models.Question
 	err = row.Scan(&question.ID, &question.Name, &question.Instructions, &question.Answer)
 	if err != nil {
 		return err
@@ -199,17 +199,17 @@ func updateQuestion2(id string, updatedQuestion Question) error {
 	return nil
 }
 
-func deleteQuestion2(id string) error {
+func DeleteQuestion(id string) error {
 
 	// connect to DB
-	db, err := sql.Open("mysql", DBConnectionString)
+	db, err := sql.Open("mysql", config.DBConnectionString)
 	if err != nil {
 		return err
 	}
 
 	// check if question exists
 	row := db.QueryRow("SELECT * FROM questions WHERE id = ?", id)
-	var question Question
+	var question models.Question
 	err = row.Scan(&question.ID, &question.Name, &question.Instructions, &question.Answer)
 	if err != nil {
 		return err
@@ -229,7 +229,7 @@ func deleteQuestion2(id string) error {
 	return nil
 }
 
-func createTestCases2(db *sql.DB, testCases []TestCase, questionId int) error {
+func createTestCases(db *sql.DB, testCases []models.TestCase, questionId int) error {
 
 	stmt, err := db.Prepare("INSERT INTO test_cases (question_id, input, output) VALUES (?, ?, ?)")
 	if err != nil {
@@ -248,7 +248,7 @@ func createTestCases2(db *sql.DB, testCases []TestCase, questionId int) error {
 	return nil
 }
 
-func updateTestCases2(db *sql.DB, testCases []TestCase, questionID int) error {
+func updateTestCases(db *sql.DB, testCases []models.TestCase, questionID int) error {
 
 	// Delete existing test cases
 	_, err := db.Exec("DELETE FROM test_cases WHERE question_id = ?", questionID)
@@ -257,81 +257,5 @@ func updateTestCases2(db *sql.DB, testCases []TestCase, questionID int) error {
 	}
 
 	// save new testcases
-	return createTestCases2(db, testCases, questionID)
-}
-
-/// API:
-
-func getQuestionById1(c *gin.Context) {
-
-	id := c.Param("id")
-
-	question, err := getQuestionById2(id)
-	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
-		fmt.Print(err)
-		return
-	}
-
-	c.JSON(200, question)
-}
-
-func createQuestion1(c *gin.Context) {
-
-	// get question params
-	var question Question
-	err := c.BindJSON(&question)
-	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
-		fmt.Print(err)
-		return
-	}
-
-	id, err := createQuestion2(question)
-	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
-		fmt.Print(err)
-		return
-	}
-
-	c.JSON(201, gin.H{"id": id, "message": "question created"})
-}
-
-func updateQuestion1(c *gin.Context) {
-
-	id := c.Param("id")
-
-	// get question params
-	var updatedQuestion Question
-
-	err := c.BindJSON(&updatedQuestion)
-	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
-		fmt.Print(err)
-		return
-	}
-
-	err = updateQuestion2(id, updatedQuestion)
-	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
-		fmt.Print(err)
-		return
-	}
-
-	c.JSON(200, gin.H{"message": "question updated"})
-}
-
-func deleteQuestion1(c *gin.Context) {
-
-	id := c.Param("id")
-
-	// delete question
-	err := deleteQuestion2(id)
-	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
-		fmt.Print(err)
-		return
-	}
-
-	c.JSON(200, gin.H{"message": "question deleted"})
+	return createTestCases(db, testCases, questionID)
 }

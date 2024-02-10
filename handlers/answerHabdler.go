@@ -1,18 +1,20 @@
-package main
+package handlers
 
 import (
 	//"app/models"
 	//"app/utils"
 	"fmt"
 	"net/http"
+	"leetcoder/models"
+	"leetcoder/services"
 
 	"github.com/gin-gonic/gin"
 )
 
-func checkAnswer(c *gin.Context) {
+func CheckAnswer(c *gin.Context) {
 
 	// get answer params
-	var ans Answer
+	var ans models.Answer
 
 	err := c.BindJSON(&ans)
 	if err != nil {
@@ -23,7 +25,7 @@ func checkAnswer(c *gin.Context) {
 
 	// get the  question
 	questionID := c.Param("id")
-	q, err := getQuestionById2(questionID)
+	q, err := services.GetQuestionById(questionID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, err.Error())
 		fmt.Print(err)
@@ -31,7 +33,7 @@ func checkAnswer(c *gin.Context) {
 	}
 
 	// run code
-	result, err := checkAnswer2(q, ans)
+	result, err := services.CheckAnswer(q, ans)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, err.Error())
 		fmt.Print(err)
@@ -42,3 +44,4 @@ func checkAnswer(c *gin.Context) {
 		"correct": result,
 	})
 }
+

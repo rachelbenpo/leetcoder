@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"leetcoder/handlers"
 )
 
 func main() {
@@ -10,13 +11,13 @@ func main() {
 	router := gin.Default()
 
 	// set url for CRUD
-	router.GET("/", getAllQuestions)
-	router.GET("/questions", getAllQuestions)
-	router.GET("/questions/:id", getQuestionById)
-	router.POST("/questions", createQuestion)
-	router.PUT("/questions/:id", updateQuestion)
-	router.DELETE("/questions/:id", deleteQuestion)
-	router.POST("/questions/{id}/check-answer", checkAnswer)
+	router.GET("/", handlers.GetAllQuestions)
+	router.GET("/questions", handlers.GetAllQuestions)
+	router.GET("/questions/:id", handlers.GetQuestionById)
+	router.POST("/questions", handlers.CreateQuestion)
+	router.PUT("/questions/:id", handlers.UpdateQuestion)
+	router.DELETE("/questions/:id", handlers.DeleteQuestion)
+	router.POST("/questions/{id}/check-answer", handlers.CheckAnswer)
 
 	router.Run(":8080")
 
