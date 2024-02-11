@@ -3,76 +3,45 @@ package services
 import (
 	"fmt"
 	"leetcoder/models"
+	"strings"
 )
 
-func CheckAnswer(ans models.Answer, q models.Question) (string, error) {
 
-	code, err := buildCheckCode(ans, q)
-	if err != nil {
-		return "", err
-	}
-
-	answer, err := manageDockerPython(code)
-	if err != nil {
-		return "", err
-	}
-
-	fmt.Printf(answer)
-
-	return answer, nil
-}
-
-func buildCheckCode(ans models.Answer, q models.Question) (string, error) {
+// build code for testing answer with all test cases
+func buildTestCode(ans models.Answer, q models.Question) (string, error) {
 
 	if ans.Lang == "python" {
-		return buildPythonCode(ans, q)
+		return buildPythonTest(ans, q)
 	}
 
 	if ans.Lang == "javascript" || ans.Lang == "js" {
-		return buildJsCode(ans, q)
+		return buildJsTest(ans, q)
 	}
 	return "", fmt.Errorf("code language is not supported")
 }
 
 // generates a python code that runs the user's code against all test cases
-func buildPythonCode(ans models.Answer, q models.Question) (string, error) {
+func buildPythonTest(ans models.Answer, q models.Question) (string, error) {
 
-	codeToExec :=
-		`import json
-	` + ans.Code +
-			`def main():
-		inputs = [` + q.TestCases[0].Input
+	codeToExec := "import json\\n" + ans.Code + "\\ndef main():\\n\\tinputs = [" + q.TestCases[0].Input
 
 	for _, t := range q.TestCases[1:] {
-		codeToExec += ` ,` + t.Input
+		codeToExec += " ," + t.Input
 	}
 
-	codeToExec += `]
-		outputs = [` + q.TestCases[0].Output
-
+	codeToExec += "]\\n\\toutputs = [" + q.TestCases[0].Output
 	for _, t := range q.TestCases[1:] {
-		codeToExec += ` ,` + t.Output
+		codeToExec += " ," + t.Output
 	}
 
-	codeToExec +=
-		`]
-    	for i in range(len(inputs)):
-        	ans = func_user(inputs[i])
-        	json1 = json.dumps(ans)
-        	json2 = json.dumps(outputs[i])
-        	if json1 != json2:
-            	return False
-    	return True
-		
-		
-	if __name__ == "__main__":
-	main()`
+	codeToExec += "]\\n\\tfor i in range(len(inputs)):\\n\\t\\tans = " + q.Name +
+		"(inputs[i])\\n\\t\\tjson1 = json.dumps(ans)\\n\\t\\tjson2 = json.dumps(outputs[i])\\n\\t\\tif json1 != json2:\\n\\t\\t\\treturn False\\n\\treturn True\\n\\n\\nif __name__ == '__main__':\\n\\tprint(main())"
 
 	return codeToExec, nil
 }
 
 // generates a JS code that runs the user's code against all test cases
-func buildJsCode(ans models.Answer, q models.Question) (string, error) {
+func buildJsTest(ans models.Answer, q models.Question) (string, error) {
 
 	codeToExec := ans.Code + `
 	
@@ -103,4 +72,30 @@ func buildJsCode(ans models.Answer, q models.Question) (string, error) {
     return true;`
 
 	return codeToExec, nil
+}
+
+// build dockerfile for testing the answer
+func buildDockerfile(code, lang string) (string, error) {
+
+	if lang == "python" {
+		return buildPythonDocker(code), nil
+	}
+
+	// if ans.Lang == "javascript" || ans.Lang == "js" {
+	// 	return buildJsCode(ans, q)
+	// }
+	return "", fmt.Errorf("code language is not supported")
+}
+
+// build dockerfile for testing the answer - for python
+func buildPythonDocker(pythonCode string) string {
+
+	dockerfileContent := fmt.Sprintf(`
+FROM python:3
+WORKDIR /app
+RUN echo '%s' > script.py
+CMD ["python", "script.py"]
+`, strings.ReplaceAll(pythonCode, "'", `'"'"'`))
+
+	return dockerfileContent
 }

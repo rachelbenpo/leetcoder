@@ -5,27 +5,19 @@ import (
 	"fmt"
 	"io"
 	"os"
-	//"io/ioutil"
-	//"os/exec"
-
-	"path/filepath"
-	"strings"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
+	"github.com/docker/docker/pkg/archive"
 )
 
-// TODO:
-// func manageDockerJS(code string) (string, error) {
+func manageDocker(dockerCode string) (string, error) {
 
+	imageName := "checking-container"
 
-// not good enough - error building docker image
-func manageDockerPython(code string) (string, error) {
-
-	// Build Docker image with Python code
-	imageName := "python-container"
-	err := buildImage(code, imageName)
+	// Build Docker image
+	err := buildImage(dockerCode, imageName)
 	if err != nil {
 		fmt.Println("Error building Docker image:", err)
 		return "", err
@@ -52,108 +44,97 @@ func manageDockerPython(code string) (string, error) {
 		return "", err
 	}
 
+	fmt.Println("output:", output)
+
 	return output, nil
 }
 
-func buildImage(pythonCode, imageName string) error {
+// build a docker image from the dockerfile
+func buildImage(dockerfileContent string, imageName string) error {
 
-	// Create temp directory to store the Dockerfile and Python code
-	tempDir, err := os.MkdirTemp("", "docker-example")
-	if err != nil {
-		return err
-	}
-	defer os.RemoveAll(tempDir)
-
-	// Write Dockerfile
-	dockerfileContent := fmt.Sprintf(`
-FROM python:3
-WORKDIR /app
-RUN echo '%s' > script.py
-CMD ["python", "script.py"]
-`, strings.ReplaceAll(pythonCode, "'", `'"'"'`))
-
-	dockerfilePath := filepath.Join(tempDir, "Dockerfile")
-	err = os.WriteFile(dockerfilePath, []byte(dockerfileContent), 0644)
-	if err != nil {
-		return err
-	}
-
-	fmt.Print("after writing dockerfile", dockerfileContent)
-
-	// Build Docker image
-	ctx := context.Background()
+	// Create a Docker client
 	cli, err := client.NewClientWithOpts()
 	if err != nil {
 		return err
 	}
 
-	fmt.Print("after build docker image: ", dockerfilePath)
+	ctx := context.Background()
 
-	//buildContext := filepath.Dir(dockerfilePath)
+	// Create a tar archive from the Dockerfile content
+	tarball, err := archive.Generate("Dockerfile", dockerfileContent)
+	if err != nil {
+		return err
+	}
+
+	// Specify build options
 	buildOptions := types.ImageBuildOptions{
 		Dockerfile: "Dockerfile",
 		Tags:       []string{imageName},
 	}
 
-	buildResponse, err := cli.ImageBuild(ctx, nil, buildOptions)
+	// Build Docker image
+	buildResponse, err := cli.ImageBuild(ctx, tarball, buildOptions)
 	if err != nil {
 		return err
 	}
 	defer buildResponse.Body.Close()
 
-	// Copy build output to stdout
+	// Print build output
 	_, err = io.Copy(os.Stdout, buildResponse.Body)
 	if err != nil {
 		return err
 	}
 
+	fmt.Println("Docker image built successfully:", imageName)
+
 	return nil
 }
 
-// run the image of the user's code
+// run a Docker container using the specified image name. returns container ID
 func runContainer(imageName string) (string, error) {
 
 	ctx := context.Background()
+
+	// Create a Docker client
 	cli, err := client.NewClientWithOpts()
 	if err != nil {
 		return "", err
 	}
 
-	resp, err := cli.ContainerCreate(
-		ctx,
-		&container.Config{
-			Image: imageName,
-		},
-		nil,
-		nil,
-		nil,
-		"",
-	)
+	// Create a new container
+	resp, err := cli.ContainerCreate(ctx, &container.Config{Image: imageName}, nil, nil, nil, "")
 	if err != nil {
 		return "", err
 	}
 
+	// Start the container
 	if err := cli.ContainerStart(ctx, resp.ID, container.StartOptions{}); err != nil {
 		return "", err
 	}
 
+	// Return container ID
 	return resp.ID, nil
 }
 
-// get the output of the container - if the answer is correct or not
+// get the output of the container
 func getContainerOutput(containerID string) (string, error) {
+
 	ctx := context.Background()
+
+	// Create a Docker client
 	cli, err := client.NewClientWithOpts()
 	if err != nil {
 		return "", err
 	}
 
+	// Get the container logs
 	out, err := cli.ContainerLogs(ctx, containerID, container.LogsOptions{ShowStdout: true})
 	if err != nil {
 		return "", err
 	}
 	defer out.Close()
 
+	// Read the output from the logs
 	output, err := io.ReadAll(out)
 	if err != nil {
 		return "", err
@@ -164,7 +145,10 @@ func getContainerOutput(containerID string) (string, error) {
 
 // delete image and container
 func removeContainerAndImage(containerID, imageName string) error {
+
 	ctx := context.Background()
+
+	// Create a Docker client
 	cli, err := client.NewClientWithOpts()
 	if err != nil {
 		return err
@@ -184,3 +168,17 @@ func removeContainerAndImage(containerID, imageName string) error {
 
 	return nil
 }
+
+// func startDockerEngine() error {
+// 	// Check if Docker is running
+// 	_, err := exec.Command("docker", "info").CombinedOutput()
+// 	if err == nil {
+// 		return nil
+// 	}
+// 	// Docker is not running, try to start it
+// 	startCmd := exec.Command("service", "docker", "start")
+// 	startCmdOutput, startCmdErr := startCmd.CombinedOutput()
+// 	if startCmdErr != nil {
+// 		return fmt.Errorf("error starting Docker engine: %v\n%s", startCmdErr, startCmdOutput)
+// 	}
+// }
