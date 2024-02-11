@@ -6,7 +6,6 @@ import (
 	"strings"
 )
 
-
 // build code for testing answer with all test cases
 func buildTestCode(ans models.Answer, q models.Question) (string, error) {
 
@@ -35,7 +34,7 @@ func buildPythonTest(ans models.Answer, q models.Question) (string, error) {
 	}
 
 	codeToExec += "]\\n\\tfor i in range(len(inputs)):\\n\\t\\tans = " + q.Name +
-		"(inputs[i])\\n\\t\\tjson1 = json.dumps(ans)\\n\\t\\tjson2 = json.dumps(outputs[i])\\n\\t\\tif json1 != json2:\\n\\t\\t\\treturn False\\n\\treturn True\\n\\n\\nif __name__ == '__main__':\\n\\tprint(main())"
+		"(inputs[i])\\n\\t\\tjson1 = json.dumps(ans)\\n\\t\\tjson2 = json.dumps(outputs[i])\\n\\t\\tif json1 != json2:\\n\\t\\t\\treturn False \\n\\treturn True \\n\\n\\nif __name__ == '__main__':\\n\\tprint(main())"
 
 	return codeToExec, nil
 }

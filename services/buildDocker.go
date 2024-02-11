@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -116,33 +117,21 @@ func runContainer(imageName string) (string, error) {
 	return resp.ID, nil
 }
 
-// get the output of the container
+// get the output of a Docker container
 func getContainerOutput(containerID string) (string, error) {
 
-	ctx := context.Background()
+	// Run "docker logs" command and to get the container's output
+	cmd := exec.Command("docker", "logs", containerID)
 
-	// Create a Docker client
-	cli, err := client.NewClientWithOpts()
+	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return "", err
 	}
 
-	// Get the container logs
-	out, err := cli.ContainerLogs(ctx, containerID, container.LogsOptions{ShowStdout: true})
-	if err != nil {
-		return "", err
-	}
-	defer out.Close()
-
-	// Read the output from the logs
-	output, err := io.ReadAll(out)
-	if err != nil {
-		return "", err
-	}
-
-	return string(output), nil
+	return string(output)[0 : len(output)-1], nil
 }
 
+// TODO: fix this function to really clean up
 // delete image and container
 func removeContainerAndImage(containerID, imageName string) error {
 
@@ -168,17 +157,3 @@ func removeContainerAndImage(containerID, imageName string) error {
 
 	return nil
 }
-
-// func startDockerEngine() error {
-// 	// Check if Docker is running
-// 	_, err := exec.Command("docker", "info").CombinedOutput()
-// 	if err == nil {
-// 		return nil
-// 	}
-// 	// Docker is not running, try to start it
-// 	startCmd := exec.Command("service", "docker", "start")
-// 	startCmdOutput, startCmdErr := startCmd.CombinedOutput()
-// 	if startCmdErr != nil {
-// 		return fmt.Errorf("error starting Docker engine: %v\n%s", startCmdErr, startCmdOutput)
-// 	}
-// }
