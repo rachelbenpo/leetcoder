@@ -14,6 +14,7 @@ func CheckAnswer(ans models.Answer, q models.Question) (string, error) {
 		fmt.Print("error building test code", err)
 		return "", err
 	}
+	
 	fmt.Println("testCode: ", testCode)
 
 	// build dockerfile
@@ -22,6 +23,7 @@ func CheckAnswer(ans models.Answer, q models.Question) (string, error) {
 		fmt.Print("error building dockerfile", err)
 		return "", err
 	}
+
 	fmt.Println("dockerCode: ", dockerCode)
 
 	// run the test code inside k8s container
@@ -30,6 +32,7 @@ func CheckAnswer(ans models.Answer, q models.Question) (string, error) {
 		fmt.Print("error running test code in k8s", err)
 		return "", err
 	}
+	
 	fmt.Println("answer: ", answer)
 
 	return answer[:len(answer)-1], nil

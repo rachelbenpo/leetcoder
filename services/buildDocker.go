@@ -178,7 +178,6 @@ func getContainerOutput(containerID string) (string, error) {
 	return string(output)[0 : len(output)-1], nil
 }
 
-// TODO: fix this function to really clean up
 // delete image and container
 func removeContainerAndImage(containerID, imageName string) error {
 

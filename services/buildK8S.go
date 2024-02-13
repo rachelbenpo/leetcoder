@@ -25,7 +25,7 @@ func manageK8s(dockerCode string) (string, error) {
 		return "", err
 	}
 
-	imageName := "ghcr.io/rachelbenpo/checking-container:latest"
+	imageName := "checking-container"
 
 	// Build Docker image
 	err = buildImage(dockerCode, imageName)
@@ -49,9 +49,9 @@ func manageK8s(dockerCode string) (string, error) {
 		fmt.Println("Error creating Kubernetes pod:", err)
 		return "", err
 	}
-
 	fmt.Println("ran Kubernetes pod: ", podName)
 
+	// wait for pod to complete
 	waitForPodCompletion(podName, client)
 
 	// Get pod output
@@ -104,7 +104,7 @@ func createPod(imageName string, clientset *kubernetes.Clientset) (string, error
 	return pod.Name, err
 }
 
-// TOREMOVE if not needed
+// TOREMOVE if not needed (same as createPod function)
 func buildPod(imageName string, clientset *kubernetes.Clientset) error {
 
 	// Create Pod
@@ -139,7 +139,6 @@ func waitForPodCompletion(podName string, clientset *kubernetes.Clientset) error
 	pollingInterval := 2 * time.Second
 	maxWaitTimeout := 3 * time.Minute
 
-	// Wait for the container to terminate
 	return wait.PollImmediate(pollingInterval, maxWaitTimeout, func() (done bool, err error) {
 		pod, err := clientset.CoreV1().Pods("default").Get(context.TODO(), podName, metav1.GetOptions{})
 		if err != nil {
