@@ -19,13 +19,13 @@ import (
 
 func manageK8s(dockerCode string) (string, error) {
 
+	// get k8s client
 	client, err := getClient()
 	if err != nil {
 		return "", err
 	}
 
-	imageName := "checking-container"
-	// imageName = "ghcr.io/rachelbenpo/check-code-try:2-false"
+	imageName := "ghcr.io/rachelbenpo/checking-container:latest"
 
 	// Build Docker image
 	err = buildImage(dockerCode, imageName)
@@ -36,7 +36,7 @@ func manageK8s(dockerCode string) (string, error) {
 	fmt.Println("built Docker image: ", imageName)
 
 	// Push the Docker image to GitHub Container Registry
-	imageUrl, err := pushImage(imageName)
+	_, err = pushImage(imageName)
 	if err != nil {
 		fmt.Println("Error pushing image to registry:", err)
 		return "", err
@@ -44,7 +44,7 @@ func manageK8s(dockerCode string) (string, error) {
 	fmt.Println("pushed image to registry: ", imageName)
 
 	// Run Kubernetes pod
-	podName, err := createPod(imageUrl, client)
+	podName, err := createPod(imageName, client)
 	if err != nil {
 		fmt.Println("Error creating Kubernetes pod:", err)
 		return "", err
@@ -64,13 +64,13 @@ func manageK8s(dockerCode string) (string, error) {
 	fmt.Println("got pod output: ", output)
 
 	// Remove the pod and image
-	err = removePodAndImage(podName, imageUrl, client)
-	if err != nil {
-		fmt.Println("Error cleaning up:", err)
-		return "", err
-	}
+	// err = removePodAndImage(podName, imageUrl, client)
+	// if err != nil {
+	// 	fmt.Println("Error cleaning up:", err)
+	// 	return "", err
+	// }
 
-	fmt.Println("cleaned up")
+	// fmt.Println("cleaned up")
 
 	return output, nil
 }
@@ -100,37 +100,6 @@ func createPod(imageName string, clientset *kubernetes.Clientset) (string, error
 		return "", err
 	}
 	fmt.Print("created pod\n")
-
-	//TOREMOVE: --
-	// podName := pod.Name
-	/*
-		pollingInterval := 2 * time.Second
-		maxWaitTimeout := 30 * time.Second
-
-		// Wait for the container to terminate
-		err = wait.PollImmediate(pollingInterval, maxWaitTimeout, func() (done bool, err error) {
-			pod, err := clientset.CoreV1().Pods("default").Get(context.TODO(), podName, metav1.GetOptions{})
-			if err != nil {
-				return false, err
-			}
-			fmt.Printf("waiting for pod\n")
-
-			// Check if the container has terminated
-			for _, containerStatus := range pod.Status.ContainerStatuses {
-
-				fmt.Println(containerStatus.Name)
-				fmt.Println(containerStatus.State)
-
-				if containerStatus.Name == "checking-container" {
-					if containerStatus.State.Terminated != nil {
-						return true, nil
-					}
-				}
-			}
-
-			return false, nil
-		})
-	*/
 
 	return pod.Name, err
 }
@@ -168,7 +137,7 @@ func buildPod(imageName string, clientset *kubernetes.Clientset) error {
 func waitForPodCompletion(podName string, clientset *kubernetes.Clientset) error {
 
 	pollingInterval := 2 * time.Second
-	maxWaitTimeout := 30 * time.Second
+	maxWaitTimeout := 3 * time.Minute
 
 	// Wait for the container to terminate
 	return wait.PollImmediate(pollingInterval, maxWaitTimeout, func() (done bool, err error) {
@@ -194,44 +163,6 @@ func waitForPodCompletion(podName string, clientset *kubernetes.Clientset) error
 
 // get the output of a Kubernetes pod
 func getPodOutput(podName string, clientset *kubernetes.Clientset) (string, error) {
-
-	//TOREMOVE if working----
-	/*
-		// Load kubeconfig
-		config, err := clientcmd.BuildConfigFromFlags("", getKubeConfigPath())
-		if err != nil {
-			return "", err
-		}
-
-		// Create Kubernetes client
-		clientset, err := kubernetes.NewForConfig(config)
-		if err != nil {
-			return "", err
-		}
-	*/
-
-	// // Get Pod logs
-	// podLogs, err := clientset.CoreV1().Pods("default").GetLogs(podName, &v1.PodLogOptions{}).Stream(context.TODO())
-	// if err != nil {
-	// 	return "", err
-	// }
-	// defer podLogs.Close()
-
-	// // Read Pod logs
-	// var outputBytes []byte
-	// buf := make([]byte, 1024)
-	// for {
-	// 	n, err := podLogs.Read(buf)
-	// 	if n == 0 && err == io.EOF {
-	// 		break
-	// 	}
-	// 	if err != nil && err != io.EOF {
-	// 		return "", err
-	// 	}
-	// 	outputBytes = append(outputBytes, buf[:n]...)
-	// }
-
-	//-------
 
 	// Get Pod logs
 	podLogs, err := clientset.CoreV1().Pods("default").GetLogs(podName, &v1.PodLogOptions{}).Stream(context.Background())

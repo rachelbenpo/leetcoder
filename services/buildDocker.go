@@ -68,12 +68,10 @@ func pushImage(imageName string) (string, error) {
 		return "", err
 	}
 
-	imageUrl := "ghcr.io/" + config.UserName + "/" + imageName + ":latest"
-
 	// login to ghcr.io
 	authConfig := registry.AuthConfig{
 		Username: config.UserName,
-		Password: config.Password,
+		Password: config.Token,
 	}
 	encodedJSON, err := json.Marshal(authConfig)
 	if err != nil {
@@ -81,15 +79,22 @@ func pushImage(imageName string) (string, error) {
 	}
 	authStr := base64.URLEncoding.EncodeToString(encodedJSON)
 
-	fmt.Println("authstr: ", authStr)
-
 	// Push the image to GitHub Container Registry
-	_, err = cli.ImagePush(context.Background(), imageUrl, types.ImagePushOptions{RegistryAuth: authStr})
+	resp, err := cli.ImagePush(context.Background(), imageName, types.ImagePushOptions{RegistryAuth: authStr})
 	if err != nil {
-		return "", fmt.Errorf("error pushing Docker image: ", imageUrl, " ", err)
+		fmt.Println("error pushing Docker image: ", imageName, " ", err)
+		return "", err
 	}
+	defer resp.Close()
 
-	return imageUrl, nil
+	// Print the response message
+	body, err := io.ReadAll(resp)
+	if err != nil {
+		return "", err
+	}
+	fmt.Println("Image push response:", string(body))
+
+	return imageName, nil
 }
 
 // TOREMOVE: from here until end of file

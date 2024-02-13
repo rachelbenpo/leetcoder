@@ -70,7 +70,7 @@ func buildDockerfile(code, lang string) (string, error) {
 	if lang == "javascript" || lang == "js" {
 		return buildJSDocker(code), nil
 	}
-	return "", fmt.Errorf("code language is not supported")
+	return "", fmt.Errorf("code language is not supported: ", lang)
 }
 
 // build dockerfile for running python code

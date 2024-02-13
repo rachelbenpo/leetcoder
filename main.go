@@ -23,10 +23,3 @@ func main() {
 
 	fmt.Printf("server runs on localhost:8080\n")
 }
-
-// save connection string in safe place
-// documentation, arrange, clear
-// structure of project
-// delete testcases function
-// is all params come from user in update or not
-// answer is need?
