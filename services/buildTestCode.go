@@ -16,10 +16,10 @@ func buildTestCode(ans models.Answer, q models.Question) (string, error) {
 	if ans.Lang == "javascript" || ans.Lang == "js" {
 		return buildJsTest(ans, q)
 	}
-	return "", fmt.Errorf("code language is not supported")
+	return "", fmt.Errorf("code language is not supported: ", ans.Lang)
 }
 
-// generates a python code that runs the user's code against all test cases
+// generate a python code that runs the user's code against all test cases
 func buildPythonTest(ans models.Answer, q models.Question) (string, error) {
 
 	codeToExec := "import json\\n" + ans.Code + "\\ndef main():\\n\\tinputs = [" + q.TestCases[0].Input
@@ -39,36 +39,23 @@ func buildPythonTest(ans models.Answer, q models.Question) (string, error) {
 	return codeToExec, nil
 }
 
-// generates a JS code that runs the user's code against all test cases
+// generate a JS code that runs the user's code against all test cases
 func buildJsTest(ans models.Answer, q models.Question) (string, error) {
 
-	codeToExec := ans.Code + `
-	
-	const inputs = [` + q.TestCases[0].Input
+	codeToExec := ans.Code + "\\nfunction testAns(){\\n \\t let inputs = [" + q.TestCases[0].Input
 
 	for _, t := range q.TestCases[1:] {
-		codeToExec += ` ,` + t.Input
+		codeToExec += " ," + t.Input
 	}
 
-	codeToExec += `]
-	const outputs = [` + q.TestCases[0].Output
+	codeToExec += "]\\n \\t let outputs = [" + q.TestCases[0].Output
 
 	for _, t := range q.TestCases[1:] {
-		codeToExec += ` ,` + t.Output
+		codeToExec += " ," + t.Output
 	}
 
-	codeToExec += `]
-	for (let i = 0; i < inputs.length; i++) {
-        const ans = funcUser(inputs[i]);
-        const json1 = JSON.stringify(ans);
-        const json2 = JSON.stringify(outputs[i]);
-
-        if (json1 !== json2) {
-            return false;
-        }
-    }
-
-    return true;`
+	codeToExec += "]\\n\\t for (let i = 0; i < inputs.length; i++) {\\n\\t\\t let ans =" + q.Name +
+		"(inputs[i]);\\n\\t\\t let json1 = JSON.stringify(ans);\\n\\t\\t let json2 = JSON.stringify(outputs[i]);\\n\\t\\t if (json1 !== json2)\\n\\t\\t\\t return false; \\n\\t}\\n\\t return true; \\n} \\nconsole.log(testAns());"
 
 	return codeToExec, nil
 }
@@ -80,13 +67,13 @@ func buildDockerfile(code, lang string) (string, error) {
 		return buildPythonDocker(code), nil
 	}
 
-	// if ans.Lang == "javascript" || ans.Lang == "js" {
-	// 	return buildJsCode(ans, q)
-	// }
+	if lang == "javascript" || lang == "js" {
+		return buildJSDocker(code), nil
+	}
 	return "", fmt.Errorf("code language is not supported")
 }
 
-// build dockerfile for testing the answer - for python
+// build dockerfile for running python code
 func buildPythonDocker(pythonCode string) string {
 
 	dockerfileContent := fmt.Sprintf(`
@@ -95,6 +82,18 @@ WORKDIR /app
 RUN echo '%s' > script.py
 CMD ["python", "script.py"]
 `, strings.ReplaceAll(pythonCode, "'", `'"'"'`))
+
+	return dockerfileContent
+}
+
+// build a Dockerfile for running JavaScript code
+func buildJSDocker(jsCode string) string {
+	dockerfileContent := fmt.Sprintf(`
+FROM node:14
+WORKDIR /app
+RUN echo '%s' > script.js
+CMD ["node", "script.js"]
+`, strings.ReplaceAll(jsCode, "'", `'"'"'`))
 
 	return dockerfileContent
 }

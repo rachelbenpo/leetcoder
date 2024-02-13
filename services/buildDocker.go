@@ -18,43 +18,6 @@ import (
 	"leetcoder/config"
 )
 
-func manageDocker(dockerCode string) (string, error) {
-
-	imageName := "checking-container"
-
-	// Build Docker image
-	err := buildImage(dockerCode, imageName)
-	if err != nil {
-		fmt.Println("Error building Docker image:", err)
-		return "", err
-	}
-
-	// Run Docker container
-	containerID, err := runContainer(imageName)
-	if err != nil {
-		fmt.Println("Error running Docker container:", err)
-		return "", err
-	}
-
-	// Get container output
-	output, err := getContainerOutput(containerID)
-	if err != nil {
-		fmt.Println("Error getting container output:", err)
-		return "", err
-	}
-
-	// remove the container and image
-	err = removeContainerAndImage(containerID, imageName)
-	if err != nil {
-		fmt.Println("Error cleaning up:", err)
-		return "", err
-	}
-
-	fmt.Println("output:", output)
-
-	return output, nil
-}
-
 // build a docker image from the dockerfile
 func buildImage(dockerfileContent string, imageName string) error {
 
@@ -131,6 +94,44 @@ func pushImage(imageName string) (string, error) {
 
 // TOREMOVE: from here until end of file
 // since don't need the docker functionality, only k8s
+
+// run the test code in a docker container
+func manageDocker(dockerCode string) (string, error) {
+
+	imageName := "checking-container"
+
+	// Build Docker image
+	err := buildImage(dockerCode, imageName)
+	if err != nil {
+		fmt.Println("Error building Docker image:", err)
+		return "", err
+	}
+
+	// Run Docker container
+	containerID, err := runContainer(imageName)
+	if err != nil {
+		fmt.Println("Error running Docker container:", err)
+		return "", err
+	}
+
+	// Get container output
+	output, err := getContainerOutput(containerID)
+	if err != nil {
+		fmt.Println("Error getting container output:", err)
+		return "", err
+	}
+
+	// remove the container and image
+	err = removeContainerAndImage(containerID, imageName)
+	if err != nil {
+		fmt.Println("Error cleaning up:", err)
+		return "", err
+	}
+
+	fmt.Println("output:", output)
+
+	return output, nil
+}
 
 // run a Docker container using the specified image name. returns container ID
 func runContainer(imageName string) (string, error) {
