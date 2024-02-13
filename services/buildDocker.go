@@ -2,6 +2,8 @@ package services
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -9,8 +11,11 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/registry"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/archive"
+
+	"leetcoder/config"
 )
 
 func manageDocker(dockerCode string) (string, error) {
@@ -90,6 +95,42 @@ func buildImage(dockerfileContent string, imageName string) error {
 
 	return nil
 }
+
+// push a docker image to github container registry
+func pushImage(imageName string) (string, error) {
+
+	// Create a Docker client
+	cli, err := client.NewClientWithOpts()
+	if err != nil {
+		return "", err
+	}
+
+	imageUrl := "ghcr.io/" + config.UserName + "/" + imageName + ":latest"
+
+	// login to ghcr.io
+	authConfig := registry.AuthConfig{
+		Username: config.UserName,
+		Password: config.Password,
+	}
+	encodedJSON, err := json.Marshal(authConfig)
+	if err != nil {
+		return "", err
+	}
+	authStr := base64.URLEncoding.EncodeToString(encodedJSON)
+
+	fmt.Println("authstr: ", authStr)
+
+	// Push the image to GitHub Container Registry
+	_, err = cli.ImagePush(context.Background(), imageUrl, types.ImagePushOptions{RegistryAuth: authStr})
+	if err != nil {
+		return "", fmt.Errorf("error pushing Docker image: ", imageUrl, " ", err)
+	}
+
+	return imageUrl, nil
+}
+
+// TOREMOVE: from here until end of file
+// since don't need the docker functionality, only k8s
 
 // run a Docker container using the specified image name. returns container ID
 func runContainer(imageName string) (string, error) {

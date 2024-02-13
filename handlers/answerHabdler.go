@@ -23,7 +23,7 @@ func CheckAnswer(c *gin.Context) {
 		return
 	}
 
-	// get the  question
+	// get the question
 	questionID := c.Param("id")
 	q, err := services.GetQuestionById(questionID)
 	if err != nil {
