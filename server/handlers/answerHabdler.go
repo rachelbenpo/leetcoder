@@ -1,12 +1,11 @@
 package handlers
 
 import (
-	//"app/models"
-	//"app/utils"
 	"fmt"
-	"leetcoder/models"
-	"leetcoder/services"
 	"net/http"
+
+	"leetcode-server/models"
+	"leetcode-server/services"
 
 	"github.com/gin-gonic/gin"
 )

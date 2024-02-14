@@ -2,8 +2,8 @@ package handlers
 
 import (
 	"fmt"
-	"leetcoder/models"
-	"leetcoder/services"
+	"leetcode-server/models"
+	"leetcode-server/services"
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"

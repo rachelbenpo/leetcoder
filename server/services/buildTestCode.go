@@ -2,7 +2,7 @@ package services
 
 import (
 	"fmt"
-	"leetcoder/models"
+	"leetcode-server/models"
 )
 
 // build code for testing answer with all test cases

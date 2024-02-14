@@ -14,7 +14,7 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/archive"
 
-	"leetcoder/config"
+	"leetcode-server/config"
 )
 
 // create dockerfile content string for testing the answer
