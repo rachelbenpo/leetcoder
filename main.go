@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"leetcoder/clientCLI"
 	"leetcoder/handlers"
 )
 
@@ -20,6 +21,8 @@ func main() {
 	router.POST("/questions/check-answer/:id", handlers.CheckAnswer)
 
 	router.Run(":8080")
+
+	clientCLI.RunClient()
 
 	fmt.Printf("server runs on localhost:8080\n")
 }
