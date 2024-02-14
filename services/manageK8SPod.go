@@ -6,9 +6,6 @@ import (
 	"io"
 	"time"
 
-	// "path/filepath"
-
-	// batchv1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -17,31 +14,14 @@ import (
 	"k8s.io/client-go/util/homedir"
 )
 
-func manageK8s(dockerCode string) (string, error) {
+// takes a docker image and runs it inside a kubernetes pod. returns the pod output
+func runImageInsideK8S(imageName string) (string, error) {
 
 	// get k8s client
 	client, err := getClient()
 	if err != nil {
 		return "", err
 	}
-
-	imageName := "checking-container"
-
-	// Build Docker image
-	err = buildImage(dockerCode, imageName)
-	if err != nil {
-		fmt.Println("Error building Docker image:", err)
-		return "", err
-	}
-	fmt.Println("built Docker image: ", imageName)
-
-	// Push the Docker image to GitHub Container Registry
-	_, err = pushImage(imageName)
-	if err != nil {
-		fmt.Println("Error pushing image to registry:", err)
-		return "", err
-	}
-	fmt.Println("pushed image to registry: ", imageName)
 
 	// Run Kubernetes pod
 	podName, err := createPod(imageName, client)
@@ -63,14 +43,13 @@ func manageK8s(dockerCode string) (string, error) {
 
 	fmt.Println("got pod output: ", output)
 
-	// Remove the pod and image
-	// err = removePodAndImage(podName, imageUrl, client)
-	// if err != nil {
-	// 	fmt.Println("Error cleaning up:", err)
-	// 	return "", err
-	// }
-
-	// fmt.Println("cleaned up")
+	// Remove the pod
+	err = removePod(podName, client)
+	if err != nil {
+		fmt.Println("Error cleaning up:", err)
+		return "", err
+	}
+	fmt.Println("cleaned up")
 
 	return output, nil
 }
@@ -104,40 +83,11 @@ func createPod(imageName string, clientset *kubernetes.Clientset) (string, error
 	return pod.Name, err
 }
 
-// TOREMOVE if not needed (same as createPod function)
-func buildPod(imageName string, clientset *kubernetes.Clientset) error {
-
-	// Create Pod
-	pod := &v1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "pod-" + imageName,
-			Namespace: "default",
-		},
-		Spec: v1.PodSpec{
-			Containers: []v1.Container{
-				{
-					Name:  "container-" + imageName,
-					Image: imageName,
-				},
-			},
-		},
-	}
-
-	_, err := clientset.CoreV1().Pods("default").Create(context.Background(), pod, metav1.CreateOptions{})
-	if err != nil {
-		return err
-	}
-
-	fmt.Println("Kubernetes Pod built successfully:", pod.Name)
-
-	return nil
-}
-
 // wait until the pod is completed
 func waitForPodCompletion(podName string, clientset *kubernetes.Clientset) error {
 
 	pollingInterval := 2 * time.Second
-	maxWaitTimeout := 3 * time.Minute
+	maxWaitTimeout := 6 * time.Minute
 
 	return wait.PollImmediate(pollingInterval, maxWaitTimeout, func() (done bool, err error) {
 		pod, err := clientset.CoreV1().Pods("default").Get(context.TODO(), podName, metav1.GetOptions{})
@@ -179,11 +129,9 @@ func getPodOutput(podName string, clientset *kubernetes.Clientset) (string, erro
 	return string(output), nil
 }
 
-// TODO: Delete image in K8s environment if needed. now the function only removes the pod.
-// delete pod and image
-func removePodAndImage(podName, imageName string, clientset *kubernetes.Clientset) error {
+// delete pod
+func removePod(podName string, clientset *kubernetes.Clientset) error {
 
-	// Delete pod
 	err := clientset.CoreV1().Pods("default").Delete(context.TODO(), podName, metav1.DeleteOptions{})
 	if err != nil {
 		return err
@@ -212,10 +160,3 @@ func getClient() (*kubernetes.Clientset, error) {
 	}
 	return clientset, nil
 }
-
-// TOREMOVE----
-// TODO: is this the correct path?
-// func getKubeConfigPath() string {
-// 	home := homedir.HomeDir()
-// 	return home + "/.kube/config"
-// }

@@ -7,16 +7,53 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
+	"strings"
 
 	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/registry"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/archive"
 
 	"leetcoder/config"
 )
+
+// create dockerfile content string for testing the answer
+func createDockerfileContent(code, lang string) (string, error) {
+
+	if lang == "python" {
+		return createPythonDockerfileContent(code), nil
+	}
+
+	if lang == "javascript" || lang == "js" {
+		return createJSDockerfileContent(code), nil
+	}
+	return "", fmt.Errorf("code language is not supported: ", lang)
+}
+
+// create dockerfile content string for running python code
+func createPythonDockerfileContent(pythonCode string) string {
+
+	dockerfileContent := fmt.Sprintf(`
+FROM python:3
+WORKDIR /app
+RUN echo '%s' > script.py
+CMD ["python", "script.py"]
+`, strings.ReplaceAll(pythonCode, "'", `'"'"'`))
+
+	return dockerfileContent
+}
+
+// create dockerfile content string for running JavaScript code
+func createJSDockerfileContent(jsCode string) string {
+	dockerfileContent := fmt.Sprintf(`
+FROM node:14
+WORKDIR /app
+RUN echo '%s' > script.js
+CMD ["node", "script.js"]
+`, strings.ReplaceAll(jsCode, "'", `'"'"'`))
+
+	return dockerfileContent
+}
 
 // build a docker image from the dockerfile
 func buildImage(dockerfileContent string, imageName string) error {
@@ -97,100 +134,13 @@ func pushImage(imageName string) (string, error) {
 	return imageName, nil
 }
 
-// TOREMOVE: from here until end of file
-// since don't need the docker functionality, only k8s
-
-// run the test code in a docker container
-func manageDocker(dockerCode string) (string, error) {
-
-	imageName := "checking-container"
-
-	// Build Docker image
-	err := buildImage(dockerCode, imageName)
-	if err != nil {
-		fmt.Println("Error building Docker image:", err)
-		return "", err
-	}
-
-	// Run Docker container
-	containerID, err := runContainer(imageName)
-	if err != nil {
-		fmt.Println("Error running Docker container:", err)
-		return "", err
-	}
-
-	// Get container output
-	output, err := getContainerOutput(containerID)
-	if err != nil {
-		fmt.Println("Error getting container output:", err)
-		return "", err
-	}
-
-	// remove the container and image
-	err = removeContainerAndImage(containerID, imageName)
-	if err != nil {
-		fmt.Println("Error cleaning up:", err)
-		return "", err
-	}
-
-	fmt.Println("output:", output)
-
-	return output, nil
-}
-
-// run a Docker container using the specified image name. returns container ID
-func runContainer(imageName string) (string, error) {
-
-	ctx := context.Background()
-
-	// Create a Docker client
-	cli, err := client.NewClientWithOpts()
-	if err != nil {
-		return "", err
-	}
-
-	// Create a new container
-	resp, err := cli.ContainerCreate(ctx, &container.Config{Image: imageName}, nil, nil, nil, "")
-	if err != nil {
-		return "", err
-	}
-
-	// Start the container
-	if err := cli.ContainerStart(ctx, resp.ID, container.StartOptions{}); err != nil {
-		return "", err
-	}
-
-	// Return container ID
-	return resp.ID, nil
-}
-
-// get the output of a Docker container
-func getContainerOutput(containerID string) (string, error) {
-
-	// Run "docker logs" command and to get the container's output
-	cmd := exec.Command("docker", "logs", containerID)
-
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return "", err
-	}
-
-	return string(output)[0 : len(output)-1], nil
-}
-
 // delete image and container
-func removeContainerAndImage(containerID, imageName string) error {
+func removeImage(imageName string) error {
 
 	ctx := context.Background()
 
 	// Create a Docker client
 	cli, err := client.NewClientWithOpts()
-	if err != nil {
-		return err
-	}
-
-	// Remove container
-	err = cli.ContainerRemove(ctx, containerID, container.RemoveOptions{Force: true})
 	if err != nil {
 		return err
 	}

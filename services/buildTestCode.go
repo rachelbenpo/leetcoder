@@ -3,7 +3,6 @@ package services
 import (
 	"fmt"
 	"leetcoder/models"
-	"strings"
 )
 
 // build code for testing answer with all test cases
@@ -58,42 +57,4 @@ func buildJsTest(ans models.Answer, q models.Question) (string, error) {
 		"(inputs[i]);\\n\\t\\t let json1 = JSON.stringify(ans);\\n\\t\\t let json2 = JSON.stringify(outputs[i]);\\n\\t\\t if (json1 !== json2)\\n\\t\\t\\t return false; \\n\\t}\\n\\t return true; \\n} \\nconsole.log(testAns());"
 
 	return codeToExec, nil
-}
-
-// build dockerfile for testing the answer
-func buildDockerfile(code, lang string) (string, error) {
-
-	if lang == "python" {
-		return buildPythonDocker(code), nil
-	}
-
-	if lang == "javascript" || lang == "js" {
-		return buildJSDocker(code), nil
-	}
-	return "", fmt.Errorf("code language is not supported: ", lang)
-}
-
-// build dockerfile for running python code
-func buildPythonDocker(pythonCode string) string {
-
-	dockerfileContent := fmt.Sprintf(`
-FROM python:3
-WORKDIR /app
-RUN echo '%s' > script.py
-CMD ["python", "script.py"]
-`, strings.ReplaceAll(pythonCode, "'", `'"'"'`))
-
-	return dockerfileContent
-}
-
-// build a Dockerfile for running JavaScript code
-func buildJSDocker(jsCode string) string {
-	dockerfileContent := fmt.Sprintf(`
-FROM node:14
-WORKDIR /app
-RUN echo '%s' > script.js
-CMD ["node", "script.js"]
-`, strings.ReplaceAll(jsCode, "'", `'"'"'`))
-
-	return dockerfileContent
 }
