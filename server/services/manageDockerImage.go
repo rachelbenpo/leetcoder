@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io"
 	"strings"
 
 	"github.com/docker/docker/api/types"
@@ -114,13 +113,6 @@ func pushImage(imageName string) (string, error) {
 		return "", err
 	}
 	defer resp.Close()
-
-	// Print the response message
-	body, err := io.ReadAll(resp)
-	if err != nil {
-		return "", err
-	}
-	fmt.Println("Image push response:", string(body))
 
 	return imageName, nil
 }
