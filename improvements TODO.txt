@@ -1,0 +1,17 @@
+improvements:
+
+Return to the user an exact detail about the type of error in his answer: is it a compilation error / runtime error / calculation error, etc.
+
+User interface improvement in terms of ease of use, appearance, and more
+
+Deleting the image from the registry after the end of its use
+
+More efficient handling of credentials
+
+Improving the running speed of checking the user's answer
+
+Handling edge cases, illegal input, etc
+
+more arrangment to code and structure
+
+make image name unique

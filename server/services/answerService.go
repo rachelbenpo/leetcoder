@@ -16,14 +16,12 @@ func CheckAnswer(ans models.Answer, q models.Question) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("error building test code", err)
 	}
-	fmt.Println("testCode: ", testCode)
 
 	// create dockerfile content
 	dockerCode, err := createDockerfileContent(testCode, ans.Lang)
 	if err != nil {
 		return "", fmt.Errorf("error creating dockerfile content", err)
 	}
-	fmt.Println("dockerCode: ", dockerCode)
 
 	// Build Docker image
 	err = buildImage(dockerCode, imageName)

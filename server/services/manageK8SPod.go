@@ -41,15 +41,12 @@ func runImageInsideK8S(imageName string) (string, error) {
 		return "", err
 	}
 
-	fmt.Println("got pod output: ", output)
-
 	// Remove the pod
 	err = removePod(podName, client)
 	if err != nil {
 		fmt.Println("Error cleaning up:", err)
-		return "", err
+		return output, err
 	}
-	fmt.Println("cleaned up")
 
 	return output, nil
 }
@@ -78,7 +75,6 @@ func createPod(imageName string, clientset *kubernetes.Clientset) (string, error
 	if err != nil {
 		return "", err
 	}
-	fmt.Print("created pod\n")
 
 	return pod.Name, err
 }
@@ -94,14 +90,8 @@ func waitForPodCompletion(podName string, clientset *kubernetes.Clientset) error
 		if err != nil {
 			return false, err
 		}
-		fmt.Printf("waiting for pod\n")
-
 		// Check if the container has terminated
 		for _, containerStatus := range pod.Status.ContainerStatuses {
-
-			fmt.Println(containerStatus.Name)
-			fmt.Println(containerStatus.State)
-
 			if containerStatus.Name == "checking-container" && containerStatus.State.Terminated != nil {
 				return true, nil
 			}

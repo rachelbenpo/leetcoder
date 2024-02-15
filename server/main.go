@@ -1,12 +1,28 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
-	"github.com/gin-gonic/gin"
+	"leetcode-server/config"
 	"leetcode-server/handlers"
+	"leetcode-server/services"
+	"os"
+
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
+
+	// get github credentials from user
+	setConfigurations()
+
+	InitializeDB()
+
+	// init image first so the user will make it public
+	err := services.InitImage()
+	if err != nil {
+		fmt.Println(err)
+	}
 
 	router := gin.Default()
 
@@ -22,4 +38,28 @@ func main() {
 	router.Run(":8080")
 
 	fmt.Printf("server runs on localhost:8080\n")
+}
+
+// set configurations
+func setConfigurations() {
+
+	input := bufio.NewScanner(os.Stdin)
+
+	userName, isexist := os.LookupEnv("githubUsername")
+	if !isexist {
+		fmt.Println("Enter Your Github User Name: ")
+		input.Scan()
+		userName = input.Text()
+		os.Setenv("githubUsername", userName)
+	}
+
+	token, isexist := os.LookupEnv("githubToken")
+	if !isexist {
+		fmt.Println("Enter Your Github Token: ")
+		input.Scan()
+		token = input.Text()
+		os.Setenv("githubToken", token)
+	}
+	config.UserName = userName
+	config.Token = token
 }
