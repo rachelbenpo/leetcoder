@@ -3,8 +3,8 @@ package services
 import (
 	"database/sql"
 	"fmt"
-	"leetcoder/config"
-	"leetcoder/models"
+	"leetcode-server/config"
+	"leetcode-server/models"
 )
 
 // services - logic

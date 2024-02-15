@@ -4,8 +4,8 @@ import (
 	//"app/models"
 	//"app/utils"
 	"fmt"
-	"leetcoder/models"
-	"leetcoder/services"
+	"leetcode-server/models"
+	"leetcode-server/services"
 	"net/http"
 
 	"github.com/gin-gonic/gin"

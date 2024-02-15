@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"leetcoder/handlers"
+	"leetcode-server/handlers"
 )
 
 func main() {

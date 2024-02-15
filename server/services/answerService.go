@@ -2,8 +2,8 @@ package services
 
 import (
 	"fmt"
-	"leetcoder/config"
-	"leetcoder/models"
+	"leetcode-server/config"
+	"leetcode-server/models"
 )
 
 // check if user's answer is correct or not, using docker and kubernetes
