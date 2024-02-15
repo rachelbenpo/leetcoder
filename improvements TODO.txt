@@ -15,3 +15,5 @@ Handling edge cases, illegal input, etc
 more arrangment to code and structure
 
 make image name unique
+
+pack server app to docker image
