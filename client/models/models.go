@@ -15,7 +15,11 @@ type TestCase struct {
 }
 
 type Answer struct {
-	Lang  string
+	Lang string
 	Code string
 }
 
+type QuestionShort struct {
+	ID   int
+	Name string
+}

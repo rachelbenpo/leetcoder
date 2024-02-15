@@ -1,4 +1,10 @@
 package main
 
-func main(){}
+import (
+	"leetcode-client/clientCLI"
+)
 
+func main() {
+
+	clientCLI.CreateForm()
+}
