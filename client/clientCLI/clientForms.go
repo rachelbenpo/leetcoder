@@ -10,179 +10,79 @@ import (
 )
 
 // help variables for storing form data
-var question = models.Question{
-	ID:           0,
-	Name:         "",
-	Instructions: "",
-	Answer:       "",
-	TestCases:    []models.TestCase{},
-}
-
-var ans = models.Answer{
-	Lang: "",
-	Code: "",
-}
-
-var testCase = models.TestCase{
-	Input:  "",
-	Output: "",
-}
-
 var (
+	question      = models.Question{}
+	ans           = models.Answer{}
+	testCase      = models.TestCase{}
+	shortQuestion = models.QuestionShort{}
+
 	id             string
 	testCasesCount string
-	operation      string = "choose operation"
-	shortQuestion  models.QuestionShort
-	wantTOAnswer   bool = false
+	operation      string = "Choose operation"
+	wantTOAnswer   bool   = false
 
 	questionsList  []models.Question
 	shortQuestions []models.QuestionShort
-	names          []string
-	IDs            []int
 )
 
-/////////////////////////////////
-
-// forms:
-
-// form for choosing which operation to perform
-var operationForm = huh.NewForm(
-	huh.NewGroup(
-		huh.NewSelect[string]().
-			Options(huh.NewOptions("Get All Questions", "Get Question by ID", "Create Question", "Update Question", "Delete Question", "Check Answer")...).
-			Title("Choose Operation").
-			Value(&operation),
-	),
-)
-
-// form for creating a new question (or updating an existing question)
-var createQuestionForm = huh.NewForm(
-	huh.NewGroup(
-		huh.NewInput().
-			Title("Name").
-			Placeholder("Enter Name").
-			Value(&question.Name),
-		huh.NewInput().
-			Title("Instructions").
-			Placeholder("Enter Instructions").
-			Value(&question.Instructions),
-		huh.NewInput().
-			Title("Answer - optional").
-			Placeholder("Enter Answer if you want").
-			Value(&question.Answer),
-		huh.NewInput().
-			Title("num of test cases").
-			Value(&testCasesCount),
-	),
-)
-
-// form for creating test cases
-var testCaseForm = huh.NewForm(
-	huh.NewGroup(
-		huh.NewInput().
-			Title("Input").
-			Placeholder("Enter Input").
-			Value(&testCase.Input),
-		huh.NewInput().
-			Title("Output").
-			Placeholder("Enter Output").
-			Value(&testCase.Output),
-	),
-)
-
-// form for enter id
-var getIDForm = huh.NewForm(huh.NewGroup(
-	huh.NewInput().
-		Title("Question ID").
-		Placeholder("Enter Question ID").
-		Value(&id),
-),
-)
-
-// form for checking an answer
-var checkAnswerForm = huh.NewForm(
-	huh.NewGroup(
-		huh.NewSelect[string]().
-			Options(huh.NewOption("javascript", "javascript"), huh.NewOption("python", "python")).
-			Title("Language").
-			Value(&ans.Lang),
-		huh.NewText().
-			Title("Code").
-			Placeholder("Enter Code").
-			Value(&ans.Code),
-	),
-)
-
-// form for showing all questions and choosing once
-var allQuestionsForm = huh.NewForm(
-	huh.NewGroup(
-		huh.NewSelect[models.QuestionShort]().
-			Options(huh.NewOptions(shortQuestions...)...).
-			Title("Choose Question").
-			Value(&shortQuestion)),
-)
-
-// form for showing a single question
-var singleQuestionForm = huh.NewForm(
-	huh.NewGroup(
-		huh.NewNote().
-			Title(question.Name).
-			Description(question.Instructions),
-
-		huh.NewConfirm().
-			Affirmative("try to answer").
-			Negative("cancel").
-			Value(&wantTOAnswer),
-	),
-)
-
-///////////////////////////////////////
-
-func CreateForm() {
+// run the CLI
+func RunCLIforms() {
 
 	var err error
+
 	for {
-		// choose which operation to perform
 		switch operation {
-		case "choose operation":
-			if err = operationForm.Run(); err != nil {
+
+		case "Choose operation":
+			if err = chooseOperation(); err != nil {
 				fmt.Println("Error:", err)
 				return
 			}
 
 		case "Get All Questions":
-			if err = getAll(); err != nil {
+			if err = runGetAllForm(); err != nil {
 				fmt.Println("error getting all questions from server: ", err)
+				operation = "Choose operation"
 			}
 
 		case "Get Question by ID":
-			if err = getById(); err != nil {
+			if err = RunGetByIdForm(); err != nil {
 				fmt.Println("error getting question from server: ", err)
+				operation = "Choose operation"
 			}
-		case "show single question":
-			if err = showSingle(); err != nil {
+
+		case "Show single question":
+			if err = runShowSingleForm(); err != nil {
 				fmt.Println("error getting question from server: ", err)
+				operation = "Choose operation"
 			}
 
 		case "Create Question":
-			if err = create(); err != nil {
+			if err = runCreateQuestionForm(); err != nil {
 				fmt.Println("error creating question: ", err)
 			}
+			operation = "Choose operation"
 
 		case "Update Question":
-			if err := update(); err != nil {
+			if err := runUpdateForm(); err != nil {
 				fmt.Println("error updating question: ", err)
 			}
+			operation = "Choose operation"
 
 		case "Delete Question":
-			if err = delete(); err != nil {
+			if err = runDeleteForm(); err != nil {
 				fmt.Println("error deleting question:", err)
 			}
+			operation = "Choose operation"
 
 		case "Check Answer":
-			if err = check(); err != nil {
+			if err = runCheckForm(); err != nil {
+				operation = "Choose operation"
 				fmt.Println("error testing your answer: ", err)
 			}
+		case "Exit":
+			return
+
 		default:
 			fmt.Println("Invalid operation selected.")
 			return
@@ -190,50 +90,8 @@ func CreateForm() {
 	}
 }
 
-// ////////////////////////
-func printQuestions(questions []models.Question) {
-	for _, q := range questions {
-		printQuestion(q)
-	}
-}
-
-func printQuestion(question models.Question) {
-	fmt.Printf("ID: %d\nName: %s\nInstructions: %s", question.ID, question.Name, question.Instructions)
-
-	fmt.Println("\n-------------------------------")
-}
-
-// get array of all questions Ids
-func getIds(questions []models.Question) []string {
-	var ids []string
-	for _, q := range questions {
-		ids = append(ids, string(q.ID))
-	}
-	return ids
-}
-
-// get array of short questions
-func getShortQuestions(questions []models.Question) []models.QuestionShort {
-
-	var shortQuestions []models.QuestionShort
-	for _, q := range questions {
-		shortQuestions = append(shortQuestions, models.QuestionShort{ID: q.ID, Name: q.Name})
-	}
-	return shortQuestions
-}
-
-func getNames(questions []models.Question) []string {
-
-	var names []string
-	for _, q := range questions {
-		names = append(names, q.Name)
-	}
-	return names
-}
-
-///////////////////////////
-
-func getAll() error {
+// run form for showing all questions and choosing once
+func runGetAllForm() error {
 
 	// get all questions from the server
 	questionsList, err := GetAllQuestions()
@@ -244,7 +102,7 @@ func getAll() error {
 	shortQuestions = getShortQuestions(questionsList)
 
 	// show all questions and choose once
-	allQuestionsForm = huh.NewForm(
+	allQuestionsForm := huh.NewForm(
 		huh.NewGroup(
 			huh.NewSelect[models.QuestionShort]().
 				Options(huh.NewOptions(shortQuestions...)...).
@@ -255,12 +113,100 @@ func getAll() error {
 	if err = allQuestionsForm.Run(); err != nil {
 		return err
 	}
-	operation = "Get Question by ID"
+	operation = "Show single question"
 	id = fmt.Sprint(shortQuestion.ID)
 	return nil
 }
 
-func delete() error {
+// run form for get question by id
+func RunGetByIdForm() error {
+
+	// form for enter id
+	var getIDForm = huh.NewForm(huh.NewGroup(
+		huh.NewInput().
+			Title("Question ID").
+			Placeholder("Enter Question ID").
+			Value(&id),
+	))
+	getIDForm.View()
+	err := getIDForm.Run()
+	if err != nil {
+		return err
+	}
+
+	if question, err = GetQuestionById(id); err != nil {
+		return err
+	}
+
+	// form for showing a single question
+	singleQuestionForm := huh.NewForm(
+		huh.NewGroup(
+			huh.NewNote().
+				Title(question.Name).
+				Description(question.Instructions),
+
+			huh.NewConfirm().
+				Affirmative("try to answer").
+				Negative("cancel").
+				Value(&wantTOAnswer),
+		),
+	)
+
+	if err = singleQuestionForm.Run(); err != nil {
+		return err
+	}
+	if wantTOAnswer {
+		operation = "Check Answer"
+	} else {
+		operation = "Choose operation"
+	}
+	return nil
+}
+
+// run form for showing a single question
+func runShowSingleForm() error {
+
+	var err error
+
+	if question, err = GetQuestionById(id); err != nil {
+		return err
+	}
+
+	// form for show a single question
+	singleQuestionForm := huh.NewForm(
+		huh.NewGroup(
+			huh.NewNote().
+				Title(question.Name).
+				Description(question.Instructions),
+
+			huh.NewConfirm().
+				Affirmative("try to answer").
+				Negative("cancel").
+				Value(&wantTOAnswer),
+		),
+	)
+
+	if err = singleQuestionForm.Run(); err != nil {
+		return err
+	}
+	if wantTOAnswer {
+		operation = "Check Answer"
+	} else {
+		operation = "Choose operation"
+	}
+	return nil
+}
+
+// run form for deletion
+func runDeleteForm() error {
+
+	// form for enter id
+	getIDForm := huh.NewForm(huh.NewGroup(
+		huh.NewInput().
+			Title("Question ID").
+			Placeholder("Enter Question ID").
+			Value(&id),
+	))
 
 	if err := getIDForm.Run(); err != nil {
 		return err
@@ -272,93 +218,105 @@ func delete() error {
 	return nil
 }
 
-func update() error {
+// run form for update a question
+func runUpdateForm() error {
+
+	// form for enter id
+	var getIDForm = huh.NewForm(huh.NewGroup(
+		huh.NewInput().
+			Title("Question ID").
+			Placeholder("Enter Question ID").
+			Value(&id),
+	))
 
 	if err := getIDForm.Run(); err != nil {
 		return err
 	}
 
-	if err := createQuestionForm.Run(); err != nil {
+	updateQuestionForm := huh.NewForm(
+		huh.NewGroup(
+			huh.NewInput().
+				Title("Name").
+				Placeholder("Enter Name").
+				Value(&question.Name),
+			huh.NewInput().
+				Title("Instructions").
+				Placeholder("Enter Instructions").
+				Value(&question.Instructions),
+			huh.NewInput().
+				Title("Answer - optional").
+				Placeholder("Enter Answer if you want").
+				Value(&question.Answer),
+			huh.NewInput().
+				Title("num of test cases").
+				Value(&testCasesCount),
+		).Title("fill only the parameters you want to update"),
+	)
+
+	err := updateQuestionForm.Run()
+	if err != nil {
 		return err
 	}
+	if testCasesCount == "" {
+		question.TestCases = nil
+	} else {
+		count, err := strconv.Atoi(testCasesCount)
+		if err != nil {
+			return err
+		}
 
+		//run form for creating test cases
+		for i := 0; i < count; i++ {
+			testCaseForm := huh.NewForm(
+				huh.NewGroup(
+					huh.NewInput().
+						Title("Input").
+						Placeholder("Enter Input").
+						Value(&testCase.Input),
+					huh.NewInput().
+						Title("Output").
+						Placeholder("Enter Output").
+						Value(&testCase.Output),
+				),
+			)
+			if err := testCaseForm.Run(); err != nil {
+				return err
+			}
+			question.TestCases = append(question.TestCases, testCase)
+			testCase = models.TestCase{Input: "", Output: ""}
+		}
+	}
+
+	// send HTTP request to the server
 	if err := UpdateQuestion(id, question); err != nil {
 		return err
 	}
 	return nil
 }
 
-func getById() error {
+// run form for creating a new question
+func runCreateQuestionForm() error {
 
-	err := getIDForm.Run()
-	if err != nil {
-		return err
-	}
-
-	if question, err = GetQuestionById(id); err != nil {
-		return err
-	}
-
-	// form for showing a single question
-	singleQuestionForm = huh.NewForm(
+	createQuestionForm := huh.NewForm(
 		huh.NewGroup(
-			huh.NewNote().
-				Title(question.Name).
-				Description(question.Instructions),
-
-			huh.NewConfirm().
-				Affirmative("try to answer").
-				Negative("cancel").
-				Value(&wantTOAnswer),
+			huh.NewInput().
+				Title("Name").
+				Placeholder("Enter Name").
+				Value(&question.Name),
+			huh.NewInput().
+				Title("Instructions").
+				Placeholder("Enter Instructions").
+				Value(&question.Instructions),
+			huh.NewInput().
+				Title("Answer - optional").
+				Placeholder("Enter Answer if you want").
+				Value(&question.Answer),
+			huh.NewInput().
+				Title("num of test cases").
+				Value(&testCasesCount),
 		),
 	)
 
-	if err = singleQuestionForm.Run(); err != nil {
-		return err
-	}
-	if wantTOAnswer {
-		operation = "Check Answer"
-	} else {
-		operation = "choose operation"
-	}
-	return nil
-}
-
-func showSingle() error {
-	var err error
-
-	if question, err = GetQuestionById(id); err != nil {
-		return err
-	}
-
-	// form for showing a single question
-	singleQuestionForm = huh.NewForm(
-		huh.NewGroup(
-			huh.NewNote().
-				Title(question.Name).
-				Description(question.Instructions),
-
-			huh.NewConfirm().
-				Affirmative("try to answer").
-				Negative("cancel").
-				Value(&wantTOAnswer),
-		),
-	)
-
-	if err = singleQuestionForm.Run(); err != nil {
-		return err
-	}
-	if wantTOAnswer {
-		operation = "Check Answer"
-	} else {
-		operation = "choose operation"
-	}
-	return nil
-}
-
-func create() error {
-
-	// run form of creating a new question
 	err := createQuestionForm.Run()
 	if err != nil {
 		return err
@@ -369,15 +327,29 @@ func create() error {
 		return err
 	}
 
-	// create test cases
+	//run form for creating test cases
 	for i := 0; i < count; i++ {
+		testCaseForm := huh.NewForm(
+			huh.NewGroup(
+				huh.NewInput().
+					Title("Input").
+					Placeholder("Enter Input").
+					Value(&testCase.Input),
+				huh.NewInput().
+					Title("Output").
+					Placeholder("Enter Output").
+					Value(&testCase.Output),
+			),
+		)
 		err := testCaseForm.Run()
 		if err != nil {
 			return err
 		}
 		question.TestCases = append(question.TestCases, testCase)
+		testCase = models.TestCase{Input: "", Output: ""}
 	}
 
+	// send HTTP request to the server
 	_, err = CreateQuestion(question)
 	if err != nil {
 		return err
@@ -385,9 +357,36 @@ func create() error {
 	return nil
 }
 
-func check() error {
+// run form for checking an answer
+func runCheckForm() error {
 
-	// run form of checking an answer
+	if id == "" || id == "0" {
+		// run form for enter id
+		getIDForm := huh.NewForm(huh.NewGroup(
+			huh.NewInput().
+				Title("Question ID").
+				Placeholder("Enter Question ID").
+				Value(&id),
+		))
+
+		if err := getIDForm.Run(); err != nil {
+			return err
+		}
+	}
+
+	checkAnswerForm := huh.NewForm(
+		huh.NewGroup(
+			huh.NewSelect[string]().
+				Options(huh.NewOption("javascript", "javascript"), huh.NewOption("python", "python")).
+				Title("Language").
+				Value(&ans.Lang),
+			huh.NewText().
+				Title("Code").
+				Placeholder("Enter Code").
+				Value(&ans.Code),
+		),
+	)
+
 	if err := checkAnswerForm.Run(); err != nil {
 		return err
 	}
@@ -398,12 +397,61 @@ func check() error {
 		return err
 	}
 
-	// print response
+	// check response
 	if correct == "true" {
 		fmt.Println("correct answer.")
+		operation = "Choose operation"
 	} else {
 		fmt.Println("wrong answer.")
 		fmt.Println("message: ", correct)
+		operation = "Check Answer"
+		ans = models.Answer{Lang: "", Code: ""}
 	}
 	return nil
+}
+
+// run form for choosing which operation to perform
+func chooseOperation() error {
+
+	initVariables()
+
+	operationForm := huh.NewForm(
+		huh.NewGroup(
+			huh.NewSelect[string]().
+				Options(huh.NewOptions("Get All Questions", "Get Question by ID", "Create Question", "Update Question", "Delete Question", "Check Answer", "Exit")...).
+				Title("Choose Operation").
+				Value(&operation),
+		),
+	)
+	if err := operationForm.Run(); err != nil {
+		return err
+	}
+	return nil
+}
+
+// init help variables
+func initVariables() {
+
+	question = models.Question{}
+	ans = models.Answer{}
+	testCase = models.TestCase{}
+	shortQuestion = models.QuestionShort{}
+
+	id = ""
+	testCasesCount = ""
+
+	wantTOAnswer = false
+
+	questionsList = []models.Question{}
+	shortQuestions = []models.QuestionShort{}
+}
+
+// get array of short questions
+func getShortQuestions(questions []models.Question) []models.QuestionShort {
+
+	var shortQuestions []models.QuestionShort
+	for _, q := range questions {
+		shortQuestions = append(shortQuestions, models.QuestionShort{ID: q.ID, Name: q.Name})
+	}
+	return shortQuestions
 }
