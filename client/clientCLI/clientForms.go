@@ -1,4 +1,4 @@
-package main
+package clientCLI
 
 import (
 	"fmt"
@@ -395,10 +395,10 @@ func runCheckForm() error {
 
 	// check response
 	if correct == "true" {
-		fmt.Println("correct answer.")
+		fmt.Println("correct answer.\n----------------------------")
 		operation = "Choose operation"
 	} else {
-		fmt.Println("wrong answer.")
+		fmt.Println("wrong answer.\n----------------------------")
 		fmt.Println("message: ", correct)
 		operation = "Check Answer"
 		ans = Answer{Lang: "", Code: ""}

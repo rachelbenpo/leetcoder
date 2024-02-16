@@ -1,11 +1,10 @@
-package main
+package clientCLI
 
 import (
 	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
-
 )
 
 const baseURL = "http://localhost:8080"
@@ -83,13 +82,17 @@ func CreateQuestion(question Question) (int, error) {
 	}
 
 	// extract data from response
-	var id int
-	err = json.NewDecoder(resp.Body).Decode(&id)
+	var r struct {
+		id      int
+		message string
+	}
+
+	err = json.NewDecoder(resp.Body).Decode(&r)
 	if err != nil {
 		return 0, fmt.Errorf("Error decoding response: ", err)
 	}
 
-	return id, nil
+	return r.id, nil
 }
 
 func UpdateQuestion(id string, question Question) error {

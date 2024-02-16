@@ -49,11 +49,13 @@ func CheckAnswer(ans models.Answer, q models.Question) (string, error) {
 	// remove the image
 	err = removeImage(imageName)
 	if err!= nil {
-        fmt.Print("error removing image", err)
+		fmt.Print("error removing image", err)
         return answer[:len(answer)-1], err
     }
 
 	fmt.Println("answer: ", answer)
-
-	return answer[:len(answer)-1], nil
+	if len(answer) > 0 {
+		return answer[:len(answer)-1], nil
+	}
+	return answer, nil
 }

@@ -92,6 +92,10 @@ func waitForPodCompletion(podName string, clientset *kubernetes.Clientset) error
 		}
 		// Check if the container has terminated
 		for _, containerStatus := range pod.Status.ContainerStatuses {
+
+			fmt.Println(containerStatus.Name)
+			fmt.Println(containerStatus.State)
+
 			if containerStatus.Name == "checking-container" && containerStatus.State.Terminated != nil {
 				return true, nil
 			}

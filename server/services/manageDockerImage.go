@@ -5,6 +5,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
+	"os"
 	"strings"
 
 	"github.com/docker/docker/api/types"
@@ -83,6 +85,14 @@ func buildImage(dockerfileContent string, imageName string) error {
 	}
 	defer buildResponse.Body.Close()
 
+	// Print build output
+	_, err = io.Copy(os.Stdout, buildResponse.Body)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("Docker image built successfully:", imageName)
+
 	return nil
 }
 
@@ -114,6 +124,9 @@ func pushImage(imageName string) (string, error) {
 	}
 	defer resp.Close()
 
+	output, err := io.ReadAll(resp)
+	fmt.Print(string(output))
+
 	return imageName, nil
 }
 
@@ -140,7 +153,7 @@ func removeImage(imageName string) error {
 // init mock image in the registry for the user to make it public
 func InitImage() error {
 
-	dockerfileContent := "FROM node:14"
+	dockerfileContent := "FROM hello-world:latest"
 	imageName := "ghcr.io/" + config.UserName + "/checking-container"
 
 	// Build Docker image
@@ -152,6 +165,7 @@ func InitImage() error {
 	// Push the Docker image to GitHub Container Registry
 	_, err = pushImage(imageName)
 	if err != nil {
+		fmt.Println("error pushing image to registry: ", err)
 		return err
 	}
 	return nil

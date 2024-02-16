@@ -1,4 +1,4 @@
-package main
+package clientCLI
 
 type Question struct {
 	ID           int

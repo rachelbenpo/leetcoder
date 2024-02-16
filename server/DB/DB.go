@@ -1,4 +1,4 @@
-package main
+package DB
 
 import (
 	"database/sql"
@@ -9,11 +9,11 @@ import (
 )
 
 // checks if the database exists, creates it if not, and returns a database connection.
-func InitializeDB() (*sql.DB, error) {
+func InitializeDB() ( error) {
     
 	db, err := sql.Open("mysql", config.DBConnectionString)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer db.Close()
 
@@ -21,24 +21,24 @@ func InitializeDB() (*sql.DB, error) {
 	err = db.Ping()
 	if err == nil {
 		fmt.Println("Database already exists.")
-		return db, nil
+		return nil
 	}
 
 	// If the database doesn't exist, create it
 	fmt.Println("Database does not exist. Creating...")
 	err = createDatabase()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// Retry connecting to the newly created database
 	db, err = sql.Open("mysql", config.DBConnectionString)
 	if err != nil {
-		return nil, err
+		return  err
 	}
 
 	fmt.Println("Database created successfully.")
-	return db, nil
+	return nil
 }
 
 func createDatabase() error {

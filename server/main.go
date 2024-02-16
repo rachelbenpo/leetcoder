@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"leetcode-server/DB"
 	"leetcode-server/config"
 	"leetcode-server/handlers"
 	"leetcode-server/services"
@@ -16,13 +17,17 @@ func main() {
 	// get github credentials from user
 	setConfigurations()
 
-	InitializeDB()
-
-	// init image first so the user will make it public
-	err := services.InitImage()
+	err := DB.InitializeDB()
 	if err != nil {
 		fmt.Println(err)
 	}
+
+	// init image first so the user will make it public
+	err = services.InitImage()
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Print("please go to http://ghcr.io/" + config.UserName + "/checking-container/ and make the image public\n")
 
 	router := gin.Default()
 

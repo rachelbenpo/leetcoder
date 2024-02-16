@@ -4,7 +4,7 @@
 
 ### run client:
 here is the exe file:
-https://drive.google.com/file/d/1yt64vF_pSDecLwTLzRcZOLX-XZN9_q58/view?usp=drive_link
+https://drive.google.com/file/d/17LmwT1cvD88dwsfn1doQvlf76nJ-WSJp/view?usp=drive_link
 
 #### build client from source:
 "go build" in the client folder, and then run leetcode-client.exe file
